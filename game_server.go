@@ -6,6 +6,8 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/notnil/chess"
+
+	"github.com/psurge1/distributed-chess-server/models"
 )
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {
@@ -93,6 +95,12 @@ func establishChatConnection(sender *websocket.Conn, receiver *websocket.Conn) {
 	}
 }
 
+// var mpool = matchmaking.NewFirstComeFirstServeMPool()
+var (
+	connections = make([]*models.GPlayer, 0)
+	games       = make([]*models.Game, 0)
+)
+
 func joinGameHandler(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -101,13 +109,19 @@ func joinGameHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	connections = append(connections, conn)
+	gplayer := &models.GPlayer{Moves: conn}
+	//mpool.Join(gplayer)
+	connections = append(connections, gplayer)
 	connectionCount := len(connections)
 	if connectionCount > 0 && connectionCount%2 == 0 {
 		// start a go routine with both connections
 		// go establishChatConnection(connections[connectionCount-1], connections[connectionCount-2])
 		// go establishChatConnection(connections[connectionCount-2], connections[connectionCount-1])
-		go establishGameConnection(connections[connectionCount-1], connections[connectionCount-2])
+		whitePlayer := connections[connectionCount-1]
+		blackPlayer := connections[connectionCount-2]
+		game := models.NewGame(whitePlayer, blackPlayer)
+		games = append(games, game)
+		go game.Run()
 	}
 }
 

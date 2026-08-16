@@ -1,4 +1,4 @@
-package main
+package models
 
 type GameStatus int
 
@@ -24,4 +24,11 @@ type Game struct {
 	Status GameStatus
 	Result GameResult
 	// TournamentID TournamentID
+}
+
+func NewGame(white *GPlayer, black *GPlayer) *Game {
+	return &Game{GWhite: white, GBlack: black, Status: StatusPaired, Result: ResultUnknown}
+}
+
+func (game *Game) Run() {
 }

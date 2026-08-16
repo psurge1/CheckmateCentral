@@ -1,30 +1,21 @@
+// Package datastructures contains implementations of various datastructures to assist with matchmaking algorithms
+// datastructures explicitly named [Name]Concurrent or Concurrent[Name] are concurrent safe. Otherwise, assume they are not
 package datastructures
 
 import (
 	"errors"
-	"sync"
+	"slices"
 )
 
 type Queue[T any] struct {
-	mu     sync.Mutex
 	values []T
 }
 
-func NewQueue[T any]() *Queue[T] {
-	return &Queue[T]{values: make([]T, 0)}
-}
-
 func (q *Queue[T]) Enqueue(value T) {
-	q.mu.Lock()
-	defer q.mu.Unlock()
-
 	q.values = append(q.values, value)
 }
 
 func (q *Queue[T]) Dequeue() (T, error) {
-	q.mu.Lock()
-	defer q.mu.Unlock()
-
 	if len(q.values) < 1 {
 		var blank T
 		return blank, errors.New("queue is empty")
@@ -39,9 +30,6 @@ func (q *Queue[T]) Dequeue() (T, error) {
 }
 
 func (q *Queue[T]) Peek() (T, error) {
-	q.mu.Lock()
-	defer q.mu.Unlock()
-
 	if len(q.values) < 1 {
 		var blank T
 		return blank, errors.New("queue is empty")
@@ -49,9 +37,24 @@ func (q *Queue[T]) Peek() (T, error) {
 	return q.values[0], nil
 }
 
-func (q *Queue[T]) Len() int {
-	q.mu.Lock()
-	defer q.mu.Unlock()
+func (q *Queue[T]) FindAndDelete(object T, isEqual func(T, T) bool) (T, error) {
+	targetIdx := -1
+	for idx, value := range q.values {
+		if isEqual(object, value) {
+			targetIdx = idx
+			break
+		}
+	}
+	if targetIdx == -1 {
+		var blank T
+		return blank, errors.New("unable to find object")
+	}
 
+	value := q.values[targetIdx]
+	q.values = slices.Delete(q.values, targetIdx, targetIdx+1)
+	return value, nil
+}
+
+func (q *Queue[T]) Len() int {
 	return len(q.values)
 }
