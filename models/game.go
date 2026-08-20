@@ -1,5 +1,11 @@
 package models
 
+import (
+	"errors"
+
+	"github.com/psurge1/distributed-chess-server/streaming"
+)
+
 type GameStatus int
 
 const (
@@ -26,9 +32,16 @@ type Game struct {
 	// TournamentID TournamentID
 }
 
-func NewGame(white *GPlayer, black *GPlayer) *Game {
-	return &Game{GWhite: white, GBlack: black, Status: StatusPaired, Result: ResultUnknown}
+func NewGame(white *GPlayer, black *GPlayer) (*Game, error) {
+	if white.Game != nil {
+		return nil, errors.New("white player already belongs to a game")
+	}
+	if black.Game != nil {
+		return nil, errors.New("black player already belongs to a game")
+	}
+	return &Game{GWhite: white, GBlack: black, Status: StatusPaired, Result: ResultUnknown}, nil
 }
 
 func (game *Game) Run() {
+	streaming.EstablishGameConnection(game.GWhite.Moves, game.GBlack.Moves)
 }

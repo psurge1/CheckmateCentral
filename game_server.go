@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/gorilla/websocket"
-	"github.com/notnil/chess"
 
 	"github.com/psurge1/distributed-chess-server/models"
 )
@@ -20,79 +19,6 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
-}
-
-func establishGameConnection(whitePlayer *websocket.Conn, blackPlayer *websocket.Conn) {
-	defer whitePlayer.Close()
-	defer blackPlayer.Close()
-
-	whitePlayer.WriteMessage(1, []byte("White"))
-	blackPlayer.WriteMessage(1, []byte("Black"))
-	game := chess.NewGame(chess.UseNotation(chess.UCINotation{}))
-	for game.Outcome() == chess.NoOutcome {
-		messageType, p, err := whitePlayer.ReadMessage()
-		if err != nil {
-			log.Println(err)
-			return
-		}
-		// perform game move validation
-		err = game.MoveStr(string(p))
-		for err != nil {
-			messageType, p, err = whitePlayer.ReadMessage()
-			if err != nil {
-				log.Println(err)
-				return
-			}
-			err = game.MoveStr(string(p))
-		}
-		if err := blackPlayer.WriteMessage(messageType, p); err != nil {
-			log.Println(err)
-			return
-		}
-
-		log.Println(game.Position().Board().Draw())
-
-		messageType, p, err = blackPlayer.ReadMessage()
-		if err != nil {
-			log.Println(err)
-			return
-		}
-		// perform game move validation
-		err = game.MoveStr(string(p))
-		for err != nil {
-			messageType, p, err = blackPlayer.ReadMessage()
-			if err != nil {
-				log.Println(err)
-				return
-			}
-			err = game.MoveStr(string(p))
-		}
-		if err := whitePlayer.WriteMessage(messageType, p); err != nil {
-			log.Println(err)
-			return
-		}
-
-		log.Println(game.Position().Board().Draw())
-	}
-	whitePlayer.WriteMessage(1, []byte(game.Outcome().String()))
-	blackPlayer.WriteMessage(1, []byte(game.Outcome().String()))
-}
-
-func establishChatConnection(sender *websocket.Conn, receiver *websocket.Conn) {
-	defer sender.Close()
-	defer receiver.Close()
-	for {
-		messageType, p, err := sender.ReadMessage()
-		if err != nil {
-			log.Println(err)
-			return
-		}
-		if err := receiver.WriteMessage(messageType, p); err != nil {
-			log.Println(err)
-			return
-		}
-		log.Println(messageType, string(p))
-	}
 }
 
 // var mpool = matchmaking.NewFirstComeFirstServeMPool()
@@ -119,7 +45,11 @@ func joinGameHandler(w http.ResponseWriter, r *http.Request) {
 		// go establishChatConnection(connections[connectionCount-2], connections[connectionCount-1])
 		whitePlayer := connections[connectionCount-1]
 		blackPlayer := connections[connectionCount-2]
-		game := models.NewGame(whitePlayer, blackPlayer)
+		game, err := models.NewGame(whitePlayer, blackPlayer)
+		if err != nil {
+			log.Println("failed to create game with players! players already in game?")
+			return
+		}
 		games = append(games, game)
 		go game.Run()
 	}
