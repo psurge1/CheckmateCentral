@@ -7,16 +7,34 @@ import (
 	"sync"
 )
 
+type Server struct {
+	// port
+	// some way to gather metrics (cpu, memory, liveliness)
+	//
+}
+
 type Job interface {
 	Run()
 }
 
-type TaskScheduler struct {
-	wg sync.WaitGroup
+type Batch struct {
+	Jobs  []Job
+	Count int
 }
 
-func (ts *TaskScheduler) Submit(job Job) {
-	ts.wg.Go(job.Run)
+type TaskScheduler struct {
+	wg      sync.WaitGroup
+	servers []Server
+}
+
+func (ts *TaskScheduler) Submit(batch *Batch) error {
+	// novel implementaiton
+	// TODO implement actual scheduling
+	for jobIdx := range batch.Count {
+		ts.wg.Go(batch.Jobs[jobIdx].Run)
+	}
+
+	return nil
 }
 
 func (ts *TaskScheduler) Close() {

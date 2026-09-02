@@ -9,7 +9,7 @@ import (
 type MatchmakingPool interface {
 	Join(gplayer *models.GPlayer) bool
 	Leave(gplayer *models.GPlayer) bool
-	ExtractMatch() (*models.Game, error)
+	ExtractMatches() ([]*models.Game, error)
 }
 
 type Matchmaker struct {
@@ -17,14 +17,23 @@ type Matchmaker struct {
 	gameScheduler *ts.TaskScheduler // not owned (many matchmakers can use the same game scheduler)
 }
 
-func (mm *Matchmaker) tryMatch() {
-	//	game, err := mm.mpool.ExtractMatch()
-	//	if err != nil {
-	//		return
-	//	}
+func (mm *Matchmaker) TryMatch() {
+	games, err := mm.mpool.ExtractMatches()
+	if err != nil {
+		return
+	}
 
-	// TODO handle implementation of gameScheduler.Submit
-	//	if err := mm.gameScheduler.Submit(game); err != nil {
-	//		// TODO: handle scheduling failure
-	//	}
+	// convert game objects to jobs
+	numGames := len(games)
+	jobSlice := make([]ts.Job, numGames)
+	for i, game := range games {
+		jobSlice[i] = game
+	}
+	batch := &ts.Batch{Jobs: jobSlice, Count: numGames}
+
+	// submit games as jobs to game scheduler
+	retryCount := 5
+	for retry, err := 0, mm.gameScheduler.Submit(batch); err != nil && retry < retryCount; retry++ {
+		err = mm.gameScheduler.Submit(batch)
+	}
 }

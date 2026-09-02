@@ -11,10 +11,12 @@ type Queue[T any] struct {
 	values []T
 }
 
+// Enqueue is O(1) amoritzed
 func (q *Queue[T]) Enqueue(value T) {
 	q.values = append(q.values, value)
 }
 
+// Dequeue is O(1)
 func (q *Queue[T]) Dequeue() (T, error) {
 	if len(q.values) < 1 {
 		var blank T
@@ -29,6 +31,7 @@ func (q *Queue[T]) Dequeue() (T, error) {
 	return item, nil
 }
 
+// Peek is O(1)
 func (q *Queue[T]) Peek() (T, error) {
 	if len(q.values) < 1 {
 		var blank T
@@ -37,6 +40,7 @@ func (q *Queue[T]) Peek() (T, error) {
 	return q.values[0], nil
 }
 
+// FindAndDelete is O(N)
 func (q *Queue[T]) FindAndDelete(object T, isEqual func(T, T) bool) (T, error) {
 	targetIdx := -1
 	for idx, value := range q.values {
@@ -55,6 +59,7 @@ func (q *Queue[T]) FindAndDelete(object T, isEqual func(T, T) bool) (T, error) {
 	return value, nil
 }
 
+// Len is O(1)
 func (q *Queue[T]) Len() int {
 	return len(q.values)
 }
