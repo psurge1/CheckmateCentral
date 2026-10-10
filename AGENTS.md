@@ -35,7 +35,10 @@ Helm charts must live in this repository as infrastructure as code.
 
 These are observations of the current code, not claims that the target exists:
 
-- `game_server.go` serves HTTP and `/joingame` WebSockets on port 8080. It pairs
+- `game_server.go` constructs and mounts user, session, tournament, and game
+  muxes, then starts HTTP on port 8080. `internal/httpapi` separates each group's
+  mux registration from its handler file. Planned API handlers return 501 stubs.
+  The existing `/joingame` handler lives in `games_handlers.go`; it still pairs
   connections directly using process-local slices and launches game goroutines.
 - `matchmaking/fcfs_pool.go` contains the basic FIFO pool, protected by a mutex.
 - `matchmaking/matchmaker.go` already implements `TryMatch`: it extracts games,
@@ -59,6 +62,9 @@ These are observations of the current code, not claims that the target exists:
 
 - Follow [the build plan](docs/BUILD_PLAN.md), one stage and one small build step
   at a time. Implement only the requested scope, and preserve unrelated edits.
+- Use [the agreed REST endpoint spec](docs/API_ENDPOINTS.md) for HTTP API work.
+  Implement handlers with Go's standard `net/http` package, without another
+  framework.
 - Keep the existing Go packages useful where practical. Introduce boundaries
   when a stage needs them, and explain why each new component is necessary.
 - Ground each step in specific existing types, functions, and files. Distinguish
