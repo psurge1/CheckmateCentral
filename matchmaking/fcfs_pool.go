@@ -69,5 +69,11 @@ func (mpool *FirstComeFirstServeMPool) ExtractMatch() (*models.Game, error) {
 		return nil, errors.New("unable to dequeue player from pool")
 	}
 
-	return &models.Game{GWhite: playerOne, GBlack: playerTwo, Status: models.StatusPaired, Result: models.ResultUnknown}, nil
+	game, err := models.NewGame(playerOne, playerTwo)
+	if err != nil {
+		mpool.Players.Enqueue(playerOne)
+		mpool.Players.Enqueue(playerTwo)
+		return nil, err
+	}
+	return game, nil
 }

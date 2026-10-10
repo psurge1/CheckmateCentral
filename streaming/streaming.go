@@ -45,6 +45,9 @@ func EstablishGameConnection(whitePlayer *websocket.Conn, blackPlayer *websocket
 		}
 
 		log.Println(game.Position().Board().Draw())
+		if game.Outcome() != chess.NoOutcome {
+			break
+		}
 
 		messageType, p, err = blackPlayer.ReadMessage()
 		if err != nil {
